@@ -2,33 +2,22 @@
 #
 # mfnew
 #
-# Create a new branch from the default target with the given name
+# Create a new branch based on RCBugFix or dev a given branch name
 #
 
-usage() {
-  echo "usage: `basename $0` [1|2|3] [name]" 1>&2
-}
-
-[[ $# < 3 && $1 != "-h" && $1 != "--help" ]] || { usage; exit 1; }
-
-MFINFO=$(mfinfo "$@") || exit 1
+MFINFO=$(mfinfo) || exit
 IFS=' ' read -a INFO <<< "$MFINFO"
 TARG=${INFO[3]}
-BRANCH=pr_for_$TARG-$(date +"%G-%m-%d_%H.%M.%S")
 
-# BRANCH can be given as the last argument
+if [[ ${INFO[4]} == "(no" ]]; then
+  echo "Branch is unavailable!"
+  exit 1
+fi
+
 case "$#" in
-  1 ) case "$1" in
-        1|2|3) ;;
-        *) BRANCH=$1 ;;
-      esac
-      ;;
-  2 ) case "$1" in
-        1|2|3) BRANCH=$2 ;;
-        *) usage ; exit 1 ;;
-      esac
-      ;;
+  0 ) BRANCH=pr_for_$TARG-$(date +"%G-%d-%m|%H:%M:%S") ;;
+  1 ) BRANCH=$1 ;;
+  * ) echo "Usage: `basename $0` [branch]" 1>&2 ; exit 1 ;;
 esac
 
-git fetch upstream
-git checkout --no-track upstream/$TARG -b $BRANCH
+git checkout $TARG -b $BRANCH
